@@ -14,7 +14,198 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      admin_users: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          last_login: string | null
+          password_hash: string
+          username: string
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: string
+          last_login?: string | null
+          password_hash: string
+          username: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          last_login?: string | null
+          password_hash?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      news: {
+        Row: {
+          content: string
+          created_at: string | null
+          display_order: number | null
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          title: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          display_order?: number | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          title: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          display_order?: number | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          title?: string
+        }
+        Relationships: []
+      }
+      replies: {
+        Row: {
+          admin_id: string | null
+          anonymous_id: string | null
+          content: string
+          created_at: string | null
+          id: string
+          ip_address: unknown | null
+          thread_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          admin_id?: string | null
+          anonymous_id?: string | null
+          content: string
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown | null
+          thread_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          admin_id?: string | null
+          anonymous_id?: string | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown | null
+          thread_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "replies_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      threads: {
+        Row: {
+          anonymous_id: string
+          content: string
+          created_at: string | null
+          id: string
+          ip_address: unknown | null
+          rating: number | null
+          status: Database["public"]["Enums"]["thread_status"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          anonymous_id: string
+          content: string
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown | null
+          rating?: number | null
+          status?: Database["public"]["Enums"]["thread_status"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          anonymous_id?: string
+          content?: string
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown | null
+          rating?: number | null
+          status?: Database["public"]["Enums"]["thread_status"] | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_warnings: {
+        Row: {
+          admin_id: string | null
+          anonymous_id: string
+          created_at: string | null
+          id: string
+          reason: string
+          reply_id: string | null
+          thread_id: string | null
+          warning_level:
+            | Database["public"]["Enums"]["user_warning_level"]
+            | null
+        }
+        Insert: {
+          admin_id?: string | null
+          anonymous_id: string
+          created_at?: string | null
+          id?: string
+          reason: string
+          reply_id?: string | null
+          thread_id?: string | null
+          warning_level?:
+            | Database["public"]["Enums"]["user_warning_level"]
+            | null
+        }
+        Update: {
+          admin_id?: string | null
+          anonymous_id?: string
+          created_at?: string | null
+          id?: string
+          reason?: string
+          reply_id?: string | null
+          thread_id?: string | null
+          warning_level?:
+            | Database["public"]["Enums"]["user_warning_level"]
+            | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_warnings_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "admin_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_warnings_reply_id_fkey"
+            columns: ["reply_id"]
+            isOneToOne: false
+            referencedRelation: "replies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_warnings_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +214,8 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      thread_status: "active" | "archived" | "deleted"
+      user_warning_level: "low" | "medium" | "high"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +342,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      thread_status: ["active", "archived", "deleted"],
+      user_warning_level: ["low", "medium", "high"],
+    },
   },
 } as const
