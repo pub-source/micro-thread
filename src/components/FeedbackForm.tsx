@@ -70,23 +70,23 @@ export const FeedbackForm = ({ onFeedbackSubmitted }: FeedbackFormProps) => {
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Share Your Feedback</CardTitle>
+    <Card className="w-full max-w-2xl mx-auto">
+      <CardHeader className="text-center">
+        <CardTitle className="text-xl sm:text-2xl">Share Your Feedback</CardTitle>
       </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <CardContent className="px-4 sm:px-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
           {/* Rating */}
           <div>
-            <label className="text-sm font-medium mb-2 block">Rate your experience</label>
-            <div className="flex items-center gap-1">
+            <label className="text-sm font-medium mb-3 block">Rate your experience</label>
+            <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
               {Array.from({ length: 5 }, (_, i) => (
                 <Star
                   key={i}
-                  className={`h-6 w-6 cursor-pointer transition-colors ${
+                  className={`h-10 w-10 sm:h-12 sm:w-12 cursor-pointer transition-all duration-200 transform hover:scale-110 ${
                     i < (hoverRating || rating)
-                      ? "fill-yellow-400 text-yellow-400"
-                      : "text-gray-300 hover:text-yellow-200"
+                      ? "fill-yellow-400 text-yellow-400 drop-shadow-lg"
+                      : "text-muted-foreground hover:text-yellow-300 hover:drop-shadow-md"
                   }`}
                   onClick={() => setRating(i + 1)}
                   onMouseEnter={() => setHoverRating(i + 1)}
@@ -94,7 +94,7 @@ export const FeedbackForm = ({ onFeedbackSubmitted }: FeedbackFormProps) => {
                 />
               ))}
               {rating > 0 && (
-                <span className="ml-2 text-sm text-muted-foreground">
+                <span className="ml-2 text-base font-medium text-muted-foreground">
                   {rating}/5
                 </span>
               )}
@@ -103,15 +103,15 @@ export const FeedbackForm = ({ onFeedbackSubmitted }: FeedbackFormProps) => {
 
           {/* Feedback Content */}
           <div>
-            <label className="text-sm font-medium mb-2 block">Your feedback</label>
+            <label className="text-sm font-medium mb-3 block">Your feedback</label>
             <Textarea
               placeholder="Share your thoughts... (max 60 characters)"
               value={content}
               onChange={(e) => setContent(e.target.value.slice(0, 60))}
-              className="resize-none"
-              rows={3}
+              className="resize-none min-h-[100px] text-base"
+              rows={4}
             />
-            <div className="flex justify-between items-center mt-1">
+            <div className="flex justify-between items-center mt-2">
               <span className="text-xs text-muted-foreground">
                 {content.length}/60 characters
               </span>
@@ -121,9 +121,9 @@ export const FeedbackForm = ({ onFeedbackSubmitted }: FeedbackFormProps) => {
           <Button 
             type="submit" 
             disabled={loading || !content.trim() || rating === 0}
-            className="w-full flex items-center gap-2"
+            className="w-full flex items-center justify-center gap-2 h-12 text-base font-medium"
           >
-            <Send className="h-4 w-4" />
+            <Send className="h-5 w-5" />
             {loading ? "Submitting..." : "Submit Feedback"}
           </Button>
         </form>
