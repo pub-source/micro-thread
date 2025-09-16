@@ -110,13 +110,6 @@ export type Database = {
             referencedRelation: "threads"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "replies_thread_id_fkey"
-            columns: ["thread_id"]
-            isOneToOne: false
-            referencedRelation: "threads_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       threads: {
@@ -205,105 +198,17 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "user_warnings_reply_id_fkey"
-            columns: ["reply_id"]
-            isOneToOne: false
-            referencedRelation: "replies_public"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "user_warnings_thread_id_fkey"
             columns: ["thread_id"]
             isOneToOne: false
             referencedRelation: "threads"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_warnings_thread_id_fkey"
-            columns: ["thread_id"]
-            isOneToOne: false
-            referencedRelation: "threads_public"
             referencedColumns: ["id"]
           },
         ]
       }
     }
     Views: {
-      replies_public: {
-        Row: {
-          admin_id: string | null
-          anonymous_id: string | null
-          content: string | null
-          created_at: string | null
-          id: string | null
-          thread_id: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          admin_id?: string | null
-          anonymous_id?: string | null
-          content?: string | null
-          created_at?: string | null
-          id?: string | null
-          thread_id?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          admin_id?: string | null
-          anonymous_id?: string | null
-          content?: string | null
-          created_at?: string | null
-          id?: string | null
-          thread_id?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "replies_thread_id_fkey"
-            columns: ["thread_id"]
-            isOneToOne: false
-            referencedRelation: "threads"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "replies_thread_id_fkey"
-            columns: ["thread_id"]
-            isOneToOne: false
-            referencedRelation: "threads_public"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      threads_public: {
-        Row: {
-          anonymous_id: string | null
-          content: string | null
-          created_at: string | null
-          id: string | null
-          rating: number | null
-          status: Database["public"]["Enums"]["thread_status"] | null
-          updated_at: string | null
-        }
-        Insert: {
-          anonymous_id?: string | null
-          content?: string | null
-          created_at?: string | null
-          id?: string | null
-          rating?: number | null
-          status?: Database["public"]["Enums"]["thread_status"] | null
-          updated_at?: string | null
-        }
-        Update: {
-          anonymous_id?: string | null
-          content?: string | null
-          created_at?: string | null
-          id?: string | null
-          rating?: number | null
-          status?: Database["public"]["Enums"]["thread_status"] | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       is_admin: {

@@ -47,7 +47,7 @@ const Index = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("threads")
-      .select("*")
+      .select("id, content, rating, anonymous_id, created_at, status")
       .eq("status", "active")
       .order("created_at", { ascending: false });
 

@@ -46,7 +46,7 @@ export const FeedbackThread = ({ thread, onThreadUpdate }: FeedbackThreadProps) 
   const fetchReplies = async () => {
     const { data, error } = await supabase
       .from("replies")
-      .select("*")
+      .select("id, thread_id, content, anonymous_id, admin_id, created_at")
       .eq("thread_id", thread.id)
       .order("created_at", { ascending: true });
 
