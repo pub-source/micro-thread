@@ -104,14 +104,16 @@ export const FeedbackThread = ({ thread, onThreadUpdate }: FeedbackThreadProps) 
       <CardContent className="p-4">
         {/* Main Thread */}
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary">{thread.anonymous_id}</Badge>
-              <div className="flex items-center gap-1">
+          <div className="flex items-center justify-between min-w-0">
+            <div className="flex items-center gap-2 min-w-0">
+              <Badge variant="secondary" className="max-w-[50vw] truncate">
+                {thread.anonymous_id}
+              </Badge>
+              <div className="flex items-center gap-1 flex-shrink-0">
                 {renderStars(thread.rating)}
               </div>
             </div>
-            <span className="text-sm text-muted-foreground">
+            <span className="text-sm text-muted-foreground flex-shrink-0">
               {formatDistanceToNow(new Date(thread.created_at))} ago
             </span>
           </div>
@@ -137,11 +139,11 @@ export const FeedbackThread = ({ thread, onThreadUpdate }: FeedbackThreadProps) 
             {/* Existing Replies */}
             {replies.map((reply) => (
               <div key={reply.id} className="ml-4 p-3 bg-muted rounded-md">
-                <div className="flex items-center justify-between mb-2">
-                  <Badge variant={reply.admin_id ? "default" : "outline"}>
+                <div className="flex items-center justify-between mb-2 min-w-0">
+                  <Badge variant={reply.admin_id ? "default" : "outline"} className="max-w-[60vw] truncate">
                     {reply.admin_id ? "Admin" : reply.anonymous_id}
                   </Badge>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-xs text-muted-foreground flex-shrink-0">
                     {formatDistanceToNow(new Date(reply.created_at))} ago
                   </span>
                 </div>
