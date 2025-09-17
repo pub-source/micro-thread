@@ -111,14 +111,20 @@ export const FeedbackThread = ({ thread, onThreadUpdate }: FeedbackThreadProps) 
       setLikes(likesCount);
       setDislikes(dislikesCount);
 
-      // Check if current user has liked/disliked
-      const currentUserLike = data.find(like => like.anonymous_id === thread.anonymous_id);
-      setUserLike(currentUserLike?.like_type as 'like' | 'dislike' || null);
+      // Check if current user has liked/disliked - for now, we'll use a simple localStorage approach
+      const storedUserInteraction = localStorage.getItem(`thread_${thread.id}_interaction`);
+      setUserLike(storedUserInteraction as 'like' | 'dislike' || null);
     }
   };
 
   const handleLike = async (type: 'like' | 'dislike') => {
-    const anonymousId = `anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // Generate a unique identifier for this session
+    const sessionId = localStorage.getItem('user_session') || 
+                     `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    if (!localStorage.getItem('user_session')) {
+      localStorage.setItem('user_session', sessionId);
+    }
     
     // If user is changing their vote or removing it
     if (userLike === type) {
@@ -127,10 +133,11 @@ export const FeedbackThread = ({ thread, onThreadUpdate }: FeedbackThreadProps) 
         .from("thread_likes")
         .delete()
         .eq("thread_id", thread.id)
-        .eq("anonymous_id", anonymousId);
+        .eq("anonymous_id", sessionId);
 
       if (!error) {
         setUserLike(null);
+        localStorage.removeItem(`thread_${thread.id}_interaction`);
         fetchLikes();
       }
     } else {
@@ -139,12 +146,13 @@ export const FeedbackThread = ({ thread, onThreadUpdate }: FeedbackThreadProps) 
         .from("thread_likes")
         .upsert({
           thread_id: thread.id,
-          anonymous_id: anonymousId,
+          anonymous_id: sessionId,
           like_type: type,
         });
 
       if (!error) {
         setUserLike(type);
+        localStorage.setItem(`thread_${thread.id}_interaction`, type);
         fetchLikes();
         toast({
           title: "Success",
