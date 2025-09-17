@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { MessageCircle, Star, Send } from "lucide-react";
+import { MessageCircle, Star, Send, ThumbsUp, ThumbsDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -25,6 +25,13 @@ interface Thread {
   replies?: Reply[];
 }
 
+interface ThreadLike {
+  id: string;
+  thread_id: string;
+  anonymous_id: string;
+  like_type: 'like' | 'dislike';
+}
+
 interface FeedbackThreadProps {
   thread: Thread;
   onThreadUpdate: () => void;
@@ -35,12 +42,16 @@ export const FeedbackThread = ({ thread, onThreadUpdate }: FeedbackThreadProps) 
   const [replyContent, setReplyContent] = useState("");
   const [replies, setReplies] = useState<Reply[]>([]);
   const [loading, setLoading] = useState(false);
+  const [likes, setLikes] = useState(0);
+  const [dislikes, setDislikes] = useState(0);
+  const [userLike, setUserLike] = useState<'like' | 'dislike' | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     if (showReplies) {
       fetchReplies();
     }
+    fetchLikes();
   }, [showReplies, thread.id]);
 
   const fetchReplies = async () => {
@@ -88,6 +99,67 @@ export const FeedbackThread = ({ thread, onThreadUpdate }: FeedbackThreadProps) 
     setLoading(false);
   };
 
+  const fetchLikes = async () => {
+    const { data } = await supabase
+      .from("thread_likes")
+      .select("*")
+      .eq("thread_id", thread.id);
+
+    if (data) {
+      const likesCount = data.filter(like => like.like_type === 'like').length;
+      const dislikesCount = data.filter(like => like.like_type === 'dislike').length;
+      setLikes(likesCount);
+      setDislikes(dislikesCount);
+
+      // Check if current user has liked/disliked
+      const currentUserLike = data.find(like => like.anonymous_id === thread.anonymous_id);
+      setUserLike(currentUserLike?.like_type as 'like' | 'dislike' || null);
+    }
+  };
+
+  const handleLike = async (type: 'like' | 'dislike') => {
+    const anonymousId = `anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // If user is changing their vote or removing it
+    if (userLike === type) {
+      // Remove the like/dislike
+      const { error } = await supabase
+        .from("thread_likes")
+        .delete()
+        .eq("thread_id", thread.id)
+        .eq("anonymous_id", anonymousId);
+
+      if (!error) {
+        setUserLike(null);
+        fetchLikes();
+      }
+    } else {
+      // Add new like/dislike or update existing
+      const { error } = await supabase
+        .from("thread_likes")
+        .upsert({
+          thread_id: thread.id,
+          anonymous_id: anonymousId,
+          like_type: type,
+        });
+
+      if (!error) {
+        setUserLike(type);
+        fetchLikes();
+        toast({
+          title: "Success",
+          description: `Thread ${type}d!`,
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: `Failed to ${type} thread`,
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, i) => (
       <Star
@@ -121,15 +193,37 @@ export const FeedbackThread = ({ thread, onThreadUpdate }: FeedbackThreadProps) 
           <p className="text-foreground">{thread.content}</p>
 
           <div className="flex items-center justify-between pt-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowReplies(!showReplies)}
-              className="flex items-center gap-1"
-            >
-              <MessageCircle className="h-4 w-4" />
-              {replies.length} {replies.length === 1 ? "reply" : "replies"}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowReplies(!showReplies)}
+                className="flex items-center gap-1"
+              >
+                <MessageCircle className="h-4 w-4" />
+                {replies.length} {replies.length === 1 ? "reply" : "replies"}
+              </Button>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant={userLike === 'like' ? "default" : "ghost"}
+                size="sm"
+                onClick={() => handleLike('like')}
+                className="flex items-center gap-1"
+              >
+                <ThumbsUp className="h-4 w-4" />
+                {likes}
+              </Button>
+              <Button
+                variant={userLike === 'dislike' ? "default" : "ghost"}
+                size="sm"
+                onClick={() => handleLike('dislike')}
+                className="flex items-center gap-1"
+              >
+                <ThumbsDown className="h-4 w-4" />
+                {dislikes}
+              </Button>
+            </div>
           </div>
         </div>
 

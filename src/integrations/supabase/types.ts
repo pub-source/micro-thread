@@ -112,6 +112,30 @@ export type Database = {
           },
         ]
       }
+      thread_likes: {
+        Row: {
+          anonymous_id: string
+          created_at: string
+          id: string
+          like_type: string
+          thread_id: string
+        }
+        Insert: {
+          anonymous_id: string
+          created_at?: string
+          id?: string
+          like_type: string
+          thread_id: string
+        }
+        Update: {
+          anonymous_id?: string
+          created_at?: string
+          id?: string
+          like_type?: string
+          thread_id?: string
+        }
+        Relationships: []
+      }
       threads: {
         Row: {
           anonymous_id: string

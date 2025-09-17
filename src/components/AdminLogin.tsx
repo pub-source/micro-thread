@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AdminLoginProps {
   onLogin: () => void;
@@ -19,14 +20,30 @@ export const AdminLogin = ({ onLogin }: AdminLoginProps) => {
     e.preventDefault();
     setLoading(true);
     
-    // Simple mock authentication for demo
-    if (email === "admin@feedback.com" && password === "admin123") {
-      toast({
-        title: "Login successful",
-        description: "Welcome to the admin panel",
-      });
-      onLogin();
-    } else {
+    try {
+      // Check admin credentials in database
+      const { data, error } = await supabase
+        .rpc('verify_admin_login', {
+          input_email: email,
+          input_password: password
+        });
+
+      if (error) throw error;
+
+      if (data) {
+        toast({
+          title: "Login successful",
+          description: "Welcome to the admin panel",
+        });
+        onLogin();
+      } else {
+        toast({
+          title: "Login failed", 
+          description: "Invalid credentials",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
       toast({
         title: "Login failed",
         description: "Invalid credentials",
@@ -51,7 +68,7 @@ export const AdminLogin = ({ onLogin }: AdminLoginProps) => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@feedback.com"
+                placeholder="elmerpobs@gmail.com"
                 required
               />
             </div>

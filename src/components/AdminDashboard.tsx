@@ -106,12 +106,19 @@ export const AdminDashboard = () => {
   const addReply = async (threadId: string) => {
     if (!replyContent.trim()) return;
 
+    // Get current admin user
+    const { data: adminData } = await supabase
+      .from("admin_users")
+      .select("id")
+      .eq("email", "elmerpobs@gmail.com")
+      .single();
+
     const { error } = await supabase
       .from("replies")
       .insert({
         thread_id: threadId,
         content: replyContent.trim(),
-        admin_id: "admin-123", // Mock admin ID
+        admin_id: adminData?.id || null,
       });
 
     if (error) {
@@ -134,12 +141,19 @@ export const AdminDashboard = () => {
   const warnUser = async (anonymousId: string, threadId: string) => {
     if (!warningReason.trim()) return;
 
+    // Get current admin user
+    const { data: adminData } = await supabase
+      .from("admin_users")
+      .select("id")
+      .eq("email", "elmerpobs@gmail.com")
+      .single();
+
     const { error } = await supabase
       .from("user_warnings")
       .insert({
         anonymous_id: anonymousId,
         thread_id: threadId,
-        admin_id: "admin-123", // Mock admin ID
+        admin_id: adminData?.id || null,
         warning_level: warningLevel as "low" | "medium" | "high",
         reason: warningReason.trim(),
       });
