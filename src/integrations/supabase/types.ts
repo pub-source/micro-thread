@@ -239,6 +239,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      verify_admin_login: {
+        Args: { input_email: string; input_password: string }
+        Returns: boolean
+      }
     }
     Enums: {
       thread_status: "active" | "archived" | "deleted"

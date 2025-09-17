@@ -21,12 +21,11 @@ export const AdminLogin = ({ onLogin }: AdminLoginProps) => {
     setLoading(true);
     
     try {
-      // Check admin credentials in database
-      const { data, error } = await supabase
-        .rpc('verify_admin_login', {
-          input_email: email,
-          input_password: password
-        });
+      // Check admin credentials in database using RPC function
+      const { data, error } = await supabase.rpc('verify_admin_login' as any, {
+        input_email: email,
+        input_password: password
+      });
 
       if (error) throw error;
 
