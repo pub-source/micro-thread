@@ -142,6 +142,7 @@ export type Database = {
           content: string
           created_at: string | null
           id: string
+          image_url: string | null
           ip_address: unknown | null
           rating: number | null
           status: Database["public"]["Enums"]["thread_status"] | null
@@ -152,6 +153,7 @@ export type Database = {
           content: string
           created_at?: string | null
           id?: string
+          image_url?: string | null
           ip_address?: unknown | null
           rating?: number | null
           status?: Database["public"]["Enums"]["thread_status"] | null
@@ -162,6 +164,7 @@ export type Database = {
           content?: string
           created_at?: string | null
           id?: string
+          image_url?: string | null
           ip_address?: unknown | null
           rating?: number | null
           status?: Database["public"]["Enums"]["thread_status"] | null

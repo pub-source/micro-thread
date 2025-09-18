@@ -4,7 +4,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { MessageCircle, Star, Send, ThumbsUp, ThumbsDown } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { MessageCircle, Star, Send, ThumbsUp, ThumbsDown, AlertTriangle, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -29,6 +30,7 @@ interface Thread {
   rating: number;
   anonymous_id: string;
   created_at: string;
+  image_url?: string;
   replies?: Reply[];
 }
 
@@ -233,18 +235,59 @@ export const FeedbackThread = ({ thread, onThreadUpdate }: FeedbackThreadProps) 
     };
 
     return (
-      <Badge 
-        className={`text-white ${getWarningColor(warning.warning_level)} ml-2`}
-        title={`Warning (${warning.warning_level}): ${warning.reason}`}
-      >
-        ⚠️ {warning.warning_level}
-      </Badge>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className={`text-white ${getWarningColor(warning.warning_level)} ml-2 h-6 px-2 text-xs`}
+          >
+            <AlertTriangle className="h-3 w-3 mr-1" />
+            {warning.warning_level}
+            <ChevronDown className="h-3 w-3 ml-1" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-64 p-3 bg-background border border-border shadow-lg z-50">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Badge className={`text-white ${getWarningColor(warning.warning_level)}`}>
+                {warning.warning_level} warning
+              </Badge>
+            </div>
+            <p className="text-sm text-foreground">{warning.reason}</p>
+            <p className="text-xs text-muted-foreground">
+              {formatDistanceToNow(new Date(warning.created_at))} ago
+            </p>
+          </div>
+        </DropdownMenuContent>
+      </DropdownMenu>
     );
   };
 
+  const getStatusIndicator = (anonymousId: string) => {
+    const warning = userWarnings.get(anonymousId);
+    if (!warning) return <div className="w-1 h-full bg-green-500 rounded-full" />;
+
+    const getColor = (level: string) => {
+      switch (level) {
+        case 'low': return 'bg-yellow-500';
+        case 'medium': return 'bg-orange-500';
+        case 'high': return 'bg-red-500';
+        default: return 'bg-green-500';
+      }
+    };
+
+    return <div className={`w-1 h-full ${getColor(warning.warning_level)} rounded-full`} />;
+  };
+
   return (
-    <Card className="w-full">
-      <CardContent className="p-4">
+    <Card className="w-full flex">
+      {/* Status Indicator */}
+      <div className="flex flex-col justify-center p-1">
+        {getStatusIndicator(thread.anonymous_id)}
+      </div>
+      
+      <CardContent className="p-4 flex-1">
         {/* Main Thread */}
         <div className="space-y-3">
           <div className="flex items-center justify-between min-w-0">
@@ -265,6 +308,17 @@ export const FeedbackThread = ({ thread, onThreadUpdate }: FeedbackThreadProps) 
           </div>
           
           <p className="text-foreground">{thread.content}</p>
+
+          {/* Display image if available */}
+          {thread.image_url && (
+            <div className="mt-3">
+              <img
+                src={thread.image_url}
+                alt="Feedback attachment"
+                className="max-w-full max-h-64 object-cover rounded-lg border"
+              />
+            </div>
+          )}
 
           <div className="flex items-center justify-between pt-2">
             <div className="flex items-center gap-2">

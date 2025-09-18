@@ -11,6 +11,7 @@ interface Thread {
   rating: number;
   anonymous_id: string;
   created_at: string;
+  image_url?: string;
 }
 
 const Index = () => {
@@ -47,7 +48,7 @@ const Index = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("threads")
-      .select("id, content, rating, anonymous_id, created_at, status")
+      .select("id, content, rating, anonymous_id, created_at, status, image_url")
       .eq("status", "active")
       .order("created_at", { ascending: false });
 
