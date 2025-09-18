@@ -16,6 +16,13 @@ interface Reply {
   created_at: string;
 }
 
+interface UserWarning {
+  anonymous_id: string;
+  warning_level: 'low' | 'medium' | 'high';
+  reason: string;
+  created_at: string;
+}
+
 interface Thread {
   id: string;
   content: string;
@@ -45,6 +52,7 @@ export const FeedbackThread = ({ thread, onThreadUpdate }: FeedbackThreadProps) 
   const [likes, setLikes] = useState(0);
   const [dislikes, setDislikes] = useState(0);
   const [userLike, setUserLike] = useState<'like' | 'dislike' | null>(null);
+  const [userWarnings, setUserWarnings] = useState<Map<string, UserWarning>>(new Map());
   const { toast } = useToast();
 
   useEffect(() => {
@@ -52,6 +60,7 @@ export const FeedbackThread = ({ thread, onThreadUpdate }: FeedbackThreadProps) 
       fetchReplies();
     }
     fetchLikes();
+    fetchUserWarnings();
   }, [showReplies, thread.id]);
 
   const fetchReplies = async () => {
@@ -63,6 +72,37 @@ export const FeedbackThread = ({ thread, onThreadUpdate }: FeedbackThreadProps) 
 
     if (!error && data) {
       setReplies(data);
+      // Fetch warnings for new reply authors
+      fetchUserWarnings();
+    }
+  };
+
+  const fetchUserWarnings = async () => {
+    // Collect all anonymous_ids from thread and replies
+    const anonymousIds = [thread.anonymous_id];
+    replies.forEach(reply => {
+      if (reply.anonymous_id && !reply.admin_id) {
+        anonymousIds.push(reply.anonymous_id);
+      }
+    });
+
+    if (anonymousIds.length === 0) return;
+
+    // Fetch latest warning for each user
+    const { data } = await supabase
+      .from("user_warnings")
+      .select("anonymous_id, warning_level, reason, created_at")
+      .in("anonymous_id", anonymousIds)
+      .order("created_at", { ascending: false });
+
+    if (data) {
+      const warningsMap = new Map<string, UserWarning>();
+      data.forEach(warning => {
+        if (!warningsMap.has(warning.anonymous_id)) {
+          warningsMap.set(warning.anonymous_id, warning);
+        }
+      });
+      setUserWarnings(warningsMap);
     }
   };
 
@@ -179,6 +219,29 @@ export const FeedbackThread = ({ thread, onThreadUpdate }: FeedbackThreadProps) 
     ));
   };
 
+  const getWarningBadge = (anonymousId: string) => {
+    const warning = userWarnings.get(anonymousId);
+    if (!warning) return null;
+
+    const getWarningColor = (level: string) => {
+      switch (level) {
+        case 'low': return 'bg-yellow-500 hover:bg-yellow-600';
+        case 'medium': return 'bg-orange-500 hover:bg-orange-600';
+        case 'high': return 'bg-red-500 hover:bg-red-600';
+        default: return 'bg-gray-500 hover:bg-gray-600';
+      }
+    };
+
+    return (
+      <Badge 
+        className={`text-white ${getWarningColor(warning.warning_level)} ml-2`}
+        title={`Warning (${warning.warning_level}): ${warning.reason}`}
+      >
+        ⚠️ {warning.warning_level}
+      </Badge>
+    );
+  };
+
   return (
     <Card className="w-full">
       <CardContent className="p-4">
@@ -186,9 +249,12 @@ export const FeedbackThread = ({ thread, onThreadUpdate }: FeedbackThreadProps) 
         <div className="space-y-3">
           <div className="flex items-center justify-between min-w-0">
             <div className="flex items-center gap-2 min-w-0">
-              <Badge variant="secondary" className="max-w-[50vw] truncate">
-                {thread.anonymous_id}
-              </Badge>
+              <div className="flex items-center">
+                <Badge variant="secondary" className="max-w-[50vw] truncate">
+                  {thread.anonymous_id}
+                </Badge>
+                {getWarningBadge(thread.anonymous_id)}
+              </div>
               <div className="flex items-center gap-1 flex-shrink-0">
                 {renderStars(thread.rating)}
               </div>
@@ -242,9 +308,12 @@ export const FeedbackThread = ({ thread, onThreadUpdate }: FeedbackThreadProps) 
             {replies.map((reply) => (
               <div key={reply.id} className="ml-4 p-3 bg-muted rounded-md">
                 <div className="flex items-center justify-between mb-2 min-w-0">
-                  <Badge variant={reply.admin_id ? "default" : "outline"} className="max-w-[60vw] truncate">
-                    {reply.admin_id ? "Admin" : reply.anonymous_id}
-                  </Badge>
+                  <div className="flex items-center">
+                    <Badge variant={reply.admin_id ? "default" : "outline"} className="max-w-[60vw] truncate">
+                      {reply.admin_id ? "Admin" : reply.anonymous_id}
+                    </Badge>
+                    {!reply.admin_id && reply.anonymous_id && getWarningBadge(reply.anonymous_id)}
+                  </div>
                   <span className="text-xs text-muted-foreground flex-shrink-0">
                     {formatDistanceToNow(new Date(reply.created_at))} ago
                   </span>
