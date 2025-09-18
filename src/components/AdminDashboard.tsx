@@ -106,22 +106,31 @@ export const AdminDashboard = () => {
   const addReply = async (threadId: string) => {
     if (!replyContent.trim()) return;
 
-    // Get current admin user
-    const { data: adminData } = await supabase
-      .from("admin_users")
-      .select("id")
-      .eq("email", "elmerpobs@gmail.com")
-      .single();
+    // Try to get current admin user, but don't fail if we can't access it
+    let adminId = null;
+    try {
+      const { data: adminData } = await supabase
+        .from("admin_users")
+        .select("id")
+        .eq("email", "elmerpobs@gmail.com")
+        .maybeSingle();
+      
+      adminId = adminData?.id || null;
+    } catch (error) {
+      console.log("Could not fetch admin data, proceeding without admin_id");
+    }
 
     const { error } = await supabase
       .from("replies")
       .insert({
         thread_id: threadId,
         content: replyContent.trim(),
-        admin_id: adminData?.id || null,
+        admin_id: adminId,
+        anonymous_id: adminId ? null : "admin_reply", // Use a fallback identifier
       });
 
     if (error) {
+      console.error("Reply insert error:", error);
       toast({
         title: "Error",
         description: "Failed to add reply",
@@ -141,24 +150,32 @@ export const AdminDashboard = () => {
   const warnUser = async (anonymousId: string, threadId: string) => {
     if (!warningReason.trim()) return;
 
-    // Get current admin user
-    const { data: adminData } = await supabase
-      .from("admin_users")
-      .select("id")
-      .eq("email", "elmerpobs@gmail.com")
-      .single();
+    // Try to get current admin user, but don't fail if we can't access it
+    let adminId = null;
+    try {
+      const { data: adminData } = await supabase
+        .from("admin_users")
+        .select("id")
+        .eq("email", "elmerpobs@gmail.com")
+        .maybeSingle();
+      
+      adminId = adminData?.id || null;
+    } catch (error) {
+      console.log("Could not fetch admin data, proceeding without admin_id");
+    }
 
     const { error } = await supabase
       .from("user_warnings")
       .insert({
         anonymous_id: anonymousId,
         thread_id: threadId,
-        admin_id: adminData?.id || null,
+        admin_id: adminId,
         warning_level: warningLevel as "low" | "medium" | "high",
         reason: warningReason.trim(),
       });
 
     if (error) {
+      console.error("Warning insert error:", error);
       toast({
         title: "Error",
         description: "Failed to warn user",
