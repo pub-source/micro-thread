@@ -168,45 +168,58 @@ export const FeedbackThread = ({ thread, onThreadUpdate }: FeedbackThreadProps) 
       localStorage.setItem('user_session', sessionId);
     }
     
-    // If user is changing their vote or removing it
-    if (userLike === type) {
-      // Remove the like/dislike
-      const { error } = await supabase
-        .from("thread_likes")
-        .delete()
-        .eq("thread_id", thread.id)
-        .eq("anonymous_id", sessionId);
+    try {
+      // Use the secure function to toggle likes
+      const { data, error } = await supabase.rpc('toggle_thread_like', {
+        p_anonymous_id: sessionId,
+        p_thread_id: thread.id,
+        p_like_type: type
+      });
 
-      if (!error) {
-        setUserLike(null);
-        localStorage.removeItem(`thread_${thread.id}_interaction`);
-        fetchLikes();
-      }
-    } else {
-      // Add new like/dislike or update existing
-      const { error } = await supabase
-        .from("thread_likes")
-        .upsert({
-          thread_id: thread.id,
-          anonymous_id: sessionId,
-          like_type: type,
-        });
-
-      if (!error) {
-        setUserLike(type);
-        localStorage.setItem(`thread_${thread.id}_interaction`, type);
-        fetchLikes();
-        toast({
-          title: "Success",
-          description: `Thread ${type}d!`,
-        });
-      } else {
+      if (error) {
+        console.error('Like toggle error:', error);
         toast({
           title: "Error",
           description: `Failed to ${type} thread`,
           variant: "destructive",
         });
+        return;
       }
+
+      // Parse the JSON response
+      const result = data as { success: boolean; action?: string; error?: string };
+      
+      if (result?.success) {
+        if (result.action === 'removed') {
+          // Like was removed
+          setUserLike(null);
+          localStorage.removeItem(`thread_${thread.id}_interaction`);
+        } else if (result.action === 'added') {
+          // Like was added
+          setUserLike(type);
+          localStorage.setItem(`thread_${thread.id}_interaction`, type);
+          toast({
+            title: "Success",
+            description: `Thread ${type}d!`,
+          });
+        }
+        
+        // Refresh the like counts
+        fetchLikes();
+      } else {
+        toast({
+          title: "Error",
+          description: result?.error || `Failed to ${type} thread`,
+          variant: "destructive",
+        });
+      }
+    } catch (err) {
+      console.error('Unexpected error:', err);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
     }
   };
 

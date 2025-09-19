@@ -242,6 +242,14 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      toggle_thread_like: {
+        Args: {
+          p_anonymous_id: string
+          p_like_type: string
+          p_thread_id: string
+        }
+        Returns: Json
+      }
       verify_admin_login: {
         Args: { input_email: string; input_password: string }
         Returns: boolean
