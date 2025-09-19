@@ -16,7 +16,9 @@ interface Thread {
   anonymous_id: string;
   status: string;
   created_at: string;
+  image_url?: string;
   replies?: Reply[];
+  user_warnings?: UserWarning[];
 }
 
 interface Reply {
@@ -25,10 +27,21 @@ interface Reply {
   anonymous_id?: string;
   admin_id?: string;
   created_at: string;
+  user_warnings?: UserWarning[];
+}
+
+interface UserWarning {
+  id: string;
+  anonymous_id: string;
+  warning_level: "low" | "medium" | "high";
+  reason: string;
+  created_at: string;
+  admin_id?: string;
 }
 
 export const AdminDashboard = () => {
   const [threads, setThreads] = useState<Thread[]>([]);
+  const [warnings, setWarnings] = useState<UserWarning[]>([]);
   const [replyContent, setReplyContent] = useState("");
   const [warningReason, setWarningReason] = useState("");
   const [warningLevel, setWarningLevel] = useState("low");
@@ -36,6 +49,7 @@ export const AdminDashboard = () => {
 
   useEffect(() => {
     fetchThreads();
+    fetchWarnings();
   }, []);
 
   const fetchThreads = async () => {
@@ -43,7 +57,10 @@ export const AdminDashboard = () => {
       .from("threads")
       .select(`
         *,
-        replies (*)
+        replies (*,
+          user_warnings (*)
+        ),
+        user_warnings (*)
       `)
       .order("created_at", { ascending: false });
 
@@ -57,6 +74,24 @@ export const AdminDashboard = () => {
     }
 
     setThreads(threadsData || []);
+  };
+
+  const fetchWarnings = async () => {
+    const { data: warningsData, error } = await supabase
+      .from("user_warnings")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch warnings",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setWarnings(warningsData || []);
   };
 
   const archiveThread = async (threadId: string) => {
@@ -189,19 +224,45 @@ export const AdminDashboard = () => {
       description: "User warning issued",
     });
     setWarningReason("");
+    fetchThreads();
+    fetchWarnings();
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "active":
-        return "bg-green-500";
+        return "bg-emerald-500 text-emerald-50";
       case "archived":
-        return "bg-yellow-500";
+        return "bg-amber-500 text-amber-50";
       case "deleted":
-        return "bg-red-500";
+        return "bg-red-500 text-red-50";
       default:
-        return "bg-gray-500";
+        return "bg-slate-500 text-slate-50";
     }
+  };
+
+  const getWarningColor = (level: "low" | "medium" | "high") => {
+    switch (level) {
+      case "low":
+        return "bg-yellow-500 text-yellow-50";
+      case "medium":
+        return "bg-orange-500 text-orange-50";
+      case "high":
+        return "bg-red-500 text-red-50";
+      default:
+        return "bg-gray-500 text-gray-50";
+    }
+  };
+
+  const getUserHighestWarning = (anonymousId: string): UserWarning | null => {
+    const userWarnings = warnings.filter(w => w.anonymous_id === anonymousId);
+    if (userWarnings.length === 0) return null;
+    
+    // Return highest priority warning (high > medium > low)
+    const priorityOrder: { [key: string]: number } = { high: 3, medium: 2, low: 1 };
+    return userWarnings.reduce((highest, current) => 
+      priorityOrder[current.warning_level] > priorityOrder[highest.warning_level] ? current : highest
+    );
   };
 
   return (
@@ -216,27 +277,46 @@ export const AdminDashboard = () => {
           </TabsList>
 
           <TabsContent value="threads" className="space-y-4">
-            {threads.map((thread) => (
-              <Card key={thread.id}>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">
-                      Thread by {thread.anonymous_id}
-                    </CardTitle>
-                    <div className="flex items-center gap-2">
-                      <Badge className={getStatusColor(thread.status)}>
-                        {thread.status}
-                      </Badge>
-                      <span className="text-sm text-muted-foreground">
-                        {formatDistanceToNow(new Date(thread.created_at))} ago
-                      </span>
+            {threads.map((thread) => {
+              const userWarning = getUserHighestWarning(thread.anonymous_id);
+              
+              return (
+                <Card key={thread.id}>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <CardTitle className="text-lg">
+                          Thread by {thread.anonymous_id}
+                        </CardTitle>
+                        {userWarning && (
+                          <Badge className={getWarningColor(userWarning.warning_level)}>
+                            {userWarning.warning_level.toUpperCase()} WARNING
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge className={getStatusColor(thread.status)}>
+                          {thread.status}
+                        </Badge>
+                        <span className="text-sm text-muted-foreground">
+                          {formatDistanceToNow(new Date(thread.created_at))} ago
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                </CardHeader>
+                  </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
                     <p className="text-sm text-muted-foreground">Rating: {thread.rating}/5</p>
                     <p className="mt-2">{thread.content}</p>
+                    {thread.image_url && (
+                      <img src={thread.image_url} alt="Thread attachment" className="mt-2 max-w-sm rounded" />
+                    )}
+                    {userWarning && (
+                      <div className="mt-2 p-2 bg-muted rounded">
+                        <p className="text-sm font-medium">User Warning ({userWarning.warning_level}):</p>
+                        <p className="text-sm text-muted-foreground">{userWarning.reason}</p>
+                      </div>
+                    )}
                   </div>
 
                   {thread.status === "active" && (
@@ -262,19 +342,30 @@ export const AdminDashboard = () => {
                   {thread.replies && thread.replies.length > 0 && (
                     <div className="border-t pt-4">
                       <h4 className="font-semibold mb-2">Replies ({thread.replies.length})</h4>
-                      {thread.replies.map((reply) => (
-                        <div key={reply.id} className="bg-muted p-3 rounded mb-2">
-                          <p className="text-sm">
-                            <strong>
-                              {reply.admin_id ? "Admin" : reply.anonymous_id}:
-                            </strong>{" "}
-                            {reply.content}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {formatDistanceToNow(new Date(reply.created_at))} ago
-                          </p>
-                        </div>
-                      ))}
+                      {thread.replies.map((reply) => {
+                        const replyWarning = reply.anonymous_id ? getUserHighestWarning(reply.anonymous_id) : null;
+                        
+                        return (
+                          <div key={reply.id} className="bg-muted p-3 rounded mb-2">
+                            <div className="flex items-center gap-2 mb-1">
+                              <p className="text-sm">
+                                <strong>
+                                  {reply.admin_id ? "Admin" : reply.anonymous_id}:
+                                </strong>
+                              </p>
+                              {replyWarning && (
+                                <Badge className={`${getWarningColor(replyWarning.warning_level)} text-xs`}>
+                                  {replyWarning.warning_level.toUpperCase()}
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-sm">{reply.content}</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {formatDistanceToNow(new Date(reply.created_at))} ago
+                            </p>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
 
@@ -326,16 +417,38 @@ export const AdminDashboard = () => {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+              );
+            })}
           </TabsContent>
 
-          <TabsContent value="warnings">
+          <TabsContent value="warnings" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>User Warnings</CardTitle>
+                <CardTitle>User Warnings ({warnings.length})</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">Warning management will be implemented here.</p>
+                {warnings.length === 0 ? (
+                  <p className="text-muted-foreground">No warnings issued yet.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {warnings.map((warning) => (
+                      <div key={warning.id} className="border rounded p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">User: {warning.anonymous_id}</span>
+                            <Badge className={getWarningColor(warning.warning_level)}>
+                              {warning.warning_level.toUpperCase()}
+                            </Badge>
+                          </div>
+                          <span className="text-sm text-muted-foreground">
+                            {formatDistanceToNow(new Date(warning.created_at))} ago
+                          </span>
+                        </div>
+                        <p className="text-sm">{warning.reason}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
