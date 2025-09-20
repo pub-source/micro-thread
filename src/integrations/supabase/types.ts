@@ -245,7 +245,7 @@ export type Database = {
       toggle_thread_like: {
         Args: {
           p_anonymous_id: string
-          p_like_type: string
+          p_like_type?: string
           p_thread_id: string
         }
         Returns: Json
