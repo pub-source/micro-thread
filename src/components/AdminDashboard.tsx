@@ -231,26 +231,26 @@ export const AdminDashboard = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "active":
-        return "bg-emerald-500 text-emerald-50";
+        return "bg-green-600 text-white";
       case "archived":
-        return "bg-amber-500 text-amber-50";
+        return "bg-yellow-600 text-white";
       case "deleted":
-        return "bg-red-500 text-red-50";
+        return "bg-red-600 text-white";
       default:
-        return "bg-slate-500 text-slate-50";
+        return "bg-gray-600 text-white";
     }
   };
 
   const getWarningColor = (level: "low" | "medium" | "high") => {
     switch (level) {
       case "low":
-        return "bg-yellow-500 text-yellow-50";
+        return "bg-yellow-600 text-white";
       case "medium":
-        return "bg-orange-500 text-orange-50";
+        return "bg-orange-600 text-white";
       case "high":
-        return "bg-red-500 text-red-50";
+        return "bg-red-600 text-white";
       default:
-        return "bg-gray-500 text-gray-50";
+        return "bg-gray-600 text-white";
     }
   };
 
