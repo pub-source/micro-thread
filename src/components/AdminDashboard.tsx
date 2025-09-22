@@ -95,15 +95,23 @@ export const AdminDashboard = () => {
   };
 
   const archiveThread = async (threadId: string) => {
-    const { error } = await supabase
-      .from("threads")
-      .update({ status: "archived" })
-      .eq("id", threadId);
+    const { data, error } = await supabase.rpc("archive_thread", { 
+      p_thread_id: threadId 
+    });
 
     if (error) {
       toast({
         title: "Error",
         description: "Failed to archive thread",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!data) {
+      toast({
+        title: "Error",
+        description: "Thread not found",
         variant: "destructive",
       });
       return;
@@ -117,15 +125,23 @@ export const AdminDashboard = () => {
   };
 
   const deleteThread = async (threadId: string) => {
-    const { error } = await supabase
-      .from("threads")
-      .update({ status: "deleted" })
-      .eq("id", threadId);
+    const { data, error } = await supabase.rpc("delete_thread", { 
+      p_thread_id: threadId 
+    });
 
     if (error) {
       toast({
         title: "Error", 
         description: "Failed to delete thread",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!data) {
+      toast({
+        title: "Error",
+        description: "Thread not found",
         variant: "destructive",
       });
       return;

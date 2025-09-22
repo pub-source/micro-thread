@@ -238,6 +238,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      archive_thread: {
+        Args: { p_thread_id: string }
+        Returns: boolean
+      }
+      delete_thread: {
+        Args: { p_thread_id: string }
+        Returns: boolean
+      }
       is_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
